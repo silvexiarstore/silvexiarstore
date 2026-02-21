@@ -1,0 +1,265 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 1. USERS (العملاء)
+model User {
+  id            String    @id @default(uuid()) // Unique ID
+  email         String    @unique
+  passwordHash  String    // Hashed Password (Security)
+  fullName      String
+  phone         String?
+  role          Role      @default(CUSTOMER) // CUSTOMER or ADMIN
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  emailVerified     DateTime? // تاريخ التحقق
+  verificationToken String?   @unique
+  resetToken        String?   @unique
+  resetTokenExpiry  DateTime?
+
+  paymentCustomerId String? @unique
+
+  // Relationships
+  addresses      Address[]
+  paymentMethods PaymentMethod[]
+  orders         Order[]
+  reviews        Review[]
+  wishlist       WishlistItem[]
+}
+
+// 2. ADDRESSES (العناوين)
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  fullName    String   // الاسم لي يستلم الطلبية
+  email       String?
+  phone       String
+  country     String
+  city        String
+  postalCode  String
+  addressLine String   // العنوان بالتفصيل
+  isDefault   Boolean  @default(false) // باش نحددو العنوان الرئيسي
+
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]  // باش نعرفو هاد العنوان شحال من كوموند دارت بيه
+}
+
+// 3. PAYMENT METHODS (طرق الدفع - Stripe Tokens Only)
+// Note: We DO NOT store card numbers. Only references.
+model PaymentMethod {
+  id              String   @id @default(uuid())
+  userId          String
+  stripeMethodId  String   // The ID from Stripe (e.g., pm_12345)
+  brand           String   // Visa, MasterCard...
+  last4           String   // Last 4 digits (e.g., 4242)
+  expMonth        Int
+  expYear         Int
+  isDefault       Boolean  @default(false)
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 4. PRODUCTS (المنتجات)
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  
+  // Pricing
+  price       Decimal  // الثمن باش كتبيع دابا
+  oldPrice    Decimal? // الثمن القديم (اختياري)
+  
+  // Flags & Labels
+  isNew       Boolean  @default(false) // واش جديد
+  isBestSeller Boolean @default(false) // واش كيتباع بزاف
+  
+  // Stock (Availability)
+  inStock     Boolean  @default(true) // كاينة ولا ماكايناش (بدل العدد)
+
+  images      String[]
+  slug        String   @unique
+
+  // Specifications (غادي نخبيو فيها JSON معقد: options list)
+  specifications Json? 
+
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  // Shipping Options
+  freeShippingEnabled        Boolean @default(false)
+  freeShippingPrice          Decimal? @default(0)
+  freeShippingMinDeliveryDays Int?
+  freeShippingMaxDeliveryDays Int?
+
+  fastShippingEnabled        Boolean @default(false)
+  fastShippingPrice          Decimal?
+  fastShippingMinDeliveryDays Int?
+  fastShippingMaxDeliveryDays Int?
+
+  superFastShippingEnabled   Boolean @default(false)
+  superFastPrice             Decimal?
+  superFastMinDeliveryDays   Int?
+  superFastMaxDeliveryDays   Int?
+  createdAt   DateTime @default(now())
+  
+  // ... relations (orderItems, reviews...)
+  orderItems  OrderItem[]
+  reviews     Review[]
+  wishlist    WishlistItem[]
+}
+
+// 5. ORDERS (الطلبيات)
+model Order {
+  id              String      @id @default(uuid())
+  userId          String
+  totalAmount     Decimal
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(UNPAID)
+  
+  // Snapshots (باش نحافظو على المعلومات حتى لو اليوزر بدلها من بعد)
+  shippingAddressId String
+  paymentMethodId   String?   // Optional: user might pay one-time without saving
+
+  transactionId String?  
+
+  createdAt       DateTime    @default(now())
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id])
+  address         Address     @relation(fields: [shippingAddressId], references: [id])
+  items           OrderItem[]
+  complaints      ReturnComplaint[]
+
+  shippingMethod  ShippingMethod @default(FREE) // FREE, FAST, SUPER_FAST
+  shippingCost    Decimal?       @default(0)
+  minDeliveryDays Int?
+  maxDeliveryDays Int?
+}
+
+model ReturnComplaint {
+  id             String           @id @default(uuid())
+  orderId        String
+  customerName   String
+  customerEmail  String
+  issueType      ComplaintIssueType
+  subject        String
+  message        String
+  itemTitle      String?
+  attachments    String[]         @default([])
+  status         ComplaintStatus  @default(OPEN)
+  adminReply     String?
+  adminRepliedAt DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  order          Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status, createdAt])
+}
+
+// 6. ORDER ITEMS (تفاصيل كل طلبية)
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Decimal // السعر وقت الشراء (مهم جداً اذا تبدل السعر من بعد)
+
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+// 7. REVIEWS (التقييمات)
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  rating    Int      // من 1 إلى 5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId]) // باش ما يتعاودش نفس المنتج ف المفضلة
+}
+
+// ENUMS (خيارات ثابتة)
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum ShippingMethod {
+  FREE
+  FAST
+  SUPER_FAST
+}
+
+enum ComplaintIssueType {
+  NOT_RECEIVED
+  DAMAGED
+  WRONG_ITEM
+  DEFECTIVE
+  MISSING_PARTS
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  image       String?   // تصويرة القسم
+  products    Product[] // العلاقة مع المنتجات
+
+  createdAt   DateTime  @default(now())
+}

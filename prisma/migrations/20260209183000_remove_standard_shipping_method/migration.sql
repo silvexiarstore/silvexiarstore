@@ -1,0 +1,2 @@
+-- moved to 20260210000100_remove_standard_shipping_method
+-- no-op

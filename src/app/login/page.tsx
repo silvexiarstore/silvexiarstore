@@ -1,0 +1,231 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Mail, Lock, ArrowRight, LogIn, Loader2, Eye, EyeOff } from "lucide-react";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Login Failed");
+
+      router.push("/account");
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: { delay: 0.1 * i, duration: 0.4 },
+    }),
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background blobs */}
+      <motion.div
+        className="absolute top-0 left-0 w-96 h-96 bg-linear-to-br from-cyan-500/10 to-transparent rounded-full blur-3xl"
+        animate={{ y: [0, 30, 0] }}
+        transition={{ repeat: Infinity, duration: 5 }}
+      />
+      <motion.div
+        className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-blue-500/10 to-transparent rounded-full blur-3xl"
+        animate={{ y: [0, -30, 0] }}
+        transition={{ repeat: Infinity, duration: 6, delay: 0.5 }}
+      />
+
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="max-w-md w-full z-10"
+      >
+        <div className="bg-white rounded-2xl p-8 md:p-10 shadow-2xl border border-slate-100 backdrop-blur-xl">
+          {/* Header */}
+          <motion.div
+            custom={0}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            className="text-center mb-8"
+          >
+            <motion.div
+              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-2xl mb-6"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+            >
+              <LogIn size={32} className="text-[#1CA7A6]" />
+            </motion.div>
+            <h1 className="text-3xl md:text-4xl font-bold text-[#333333] mb-2">
+              Welcome Back
+            </h1>
+            <p className="text-[#6B7280] text-sm">
+              Sign in to access your Silvexiar account
+            </p>
+          </motion.div>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium text-center"
+            >
+              {error}
+            </motion.div>
+          )}
+
+          {/* Form */}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Email Field */}
+            <motion.div
+              custom={1}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              className="relative group"
+            >
+              <Mail
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1CA7A6] group-focus-within:scale-110 transition-transform"
+                size={20}
+              />
+              <input
+                type="email"
+                placeholder="Email Address"
+                required
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                className="w-full bg-slate-50 border-2 border-slate-200 p-4 pl-12 rounded-xl outline-none focus:border-[#1CA7A6] focus:bg-white focus:shadow-lg focus:shadow-cyan-500/20 text-[#333333] placeholder:text-[#6B7280] transition-all duration-300 font-medium"
+              />
+            </motion.div>
+
+            {/* Password Field */}
+            <motion.div
+              custom={2}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              className="relative group"
+            >
+              <Lock
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1CA7A6] group-focus-within:scale-110 transition-transform"
+                size={20}
+              />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                required
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full bg-slate-50 border-2 border-slate-200 p-4 pl-12 pr-12 rounded-xl outline-none focus:border-[#1CA7A6] focus:bg-white focus:shadow-lg focus:shadow-cyan-500/20 text-[#333333] placeholder:text-[#6B7280] transition-all duration-300 font-medium"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1CA7A6] transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </motion.div>
+
+            {/* Forgot Password Link */}
+            <motion.div
+              custom={3}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex justify-end"
+            >
+              <Link
+                href="/forgot-password"
+                className="text-sm text-[#1CA7A6] hover:text-[#F2994A] font-semibold transition-colors"
+              >
+                Forgot Password?
+              </Link>
+            </motion.div>
+
+            {/* Submit Button */}
+            <motion.button
+              custom={4}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full bg-gradient-to-r from-[#1CA7A6] to-cyan-600 text-white py-4 rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:shadow-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group"
+            >
+              {loading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight
+                    size={18}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </>
+              )}
+            </motion.button>
+          </form>
+
+          {/* Register Link */}
+          <motion.div
+            custom={5}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            className="mt-8 pt-6 border-t border-slate-200 text-center"
+          >
+            <p className="text-[#6B7280] text-sm">
+              Don't have an account?{" "}
+              <Link
+                href="/register"
+                className="font-bold text-[#F2994A] hover:text-[#1CA7A6] transition-colors"
+              >
+                Sign Up
+              </Link>
+            </p>
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

@@ -1,0 +1,2 @@
+ALTER TABLE "Product"
+ADD COLUMN "freeShippingPrice" DECIMAL(65,30) DEFAULT 0;
