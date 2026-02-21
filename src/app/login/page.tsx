@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, LogIn, Loader2, Eye, EyeOff } from "lucide-react";
+import GoogleIcon from "@/components/GoogleIcon";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const oauthError = searchParams.get("error");
+  const [error, setError] = useState(
+    oauthError ? "Google sign in failed. Please try again." : ""
+  );
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -206,9 +211,31 @@ export default function LoginPage() {
             </motion.button>
           </form>
 
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-semibold tracking-wide text-slate-500">
+              OR
+            </span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <motion.a
+            custom={5}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            href="/api/auth/google"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full border-2 border-slate-200 bg-white text-[#333333] py-3.5 rounded-xl font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-3"
+          >
+            <GoogleIcon className="h-5 w-5" />
+            Continue with Google
+          </motion.a>
+
           {/* Register Link */}
           <motion.div
-            custom={5}
+            custom={6}
             variants={itemVariants}
             initial="hidden"
             animate="visible"
