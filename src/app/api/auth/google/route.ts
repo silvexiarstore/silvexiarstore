@@ -9,6 +9,9 @@ function getGoogleRedirectUri(requestUrl: string) {
 }
 
 export async function GET(req: Request) {
+  const reqUrl = new URL(req.url);
+  const modeParam = reqUrl.searchParams.get("mode");
+  const mode = modeParam === "signup" ? "signup" : "login";
   const clientId = process.env.GOOGLE_CLIENT_ID;
 
   if (!clientId) {
@@ -22,6 +25,13 @@ export async function GET(req: Request) {
   const cookieStore = await cookies();
 
   cookieStore.set("oauth_google_state", state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 10,
+  });
+  cookieStore.set("oauth_google_mode", mode, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

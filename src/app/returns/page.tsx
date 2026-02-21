@@ -9,6 +9,7 @@ import {
   Loader2,
   Search,
   ShieldCheck,
+  X,
   UploadCloud,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -80,6 +81,28 @@ function buildSuggestions(message: string, issueType: IssueType): string[] {
   }
 
   return suggestions.slice(0, 3);
+}
+
+function getUploadErrorMessage(err: unknown): string {
+  if (err && typeof err === "object" && "message" in err) {
+    const raw = String((err as { message?: unknown }).message || "").trim();
+    if (raw) return raw;
+  }
+  if (typeof err === "string" && err.trim()) return err.trim();
+  return "Unknown upload error.";
+}
+
+function isBucketNotFoundError(err: unknown): boolean {
+  const msg = getUploadErrorMessage(err).toLowerCase();
+  return msg.includes("bucket not found") || msg.includes("bucket does not exist");
+}
+
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|m4v|avi|mkv)(\?.*)?$/i.test(url);
+}
+
+function charCountText(value: string): string {
+  return `${value.length} chars`;
 }
 
 export default function ReturnsPage() {
@@ -200,38 +223,48 @@ export default function ReturnsPage() {
     setUploading(true);
     setSubmitError(null);
     const nextUrls: string[] = [];
+    const storageBuckets = ["returns", "products"] as const;
 
     try {
       for (const file of Array.from(files).slice(0, 8)) {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        // Generate filePath in a client-only way to avoid hydration mismatch
-        const [filePath, setFilePath] = useState("");
-        useEffect(() => {
-          setFilePath(`returns/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`);
-        }, []);
-        if (!filePath) continue;
+        const filePath = `returns/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
+        let uploaded = false;
+        let lastError: unknown = null;
 
-        const { error } = await supabase.storage.from("returns").upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+        for (const bucket of storageBuckets) {
+          const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
 
-        if (error) {
-          setSubmitError(`Upload failed: ${error.message || error}`);
-          throw error;
+          if (error) {
+            lastError = error;
+            if (isBucketNotFoundError(error) && bucket === "returns") {
+              continue;
+            }
+            throw error;
+          }
+
+          const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+          if (data.publicUrl && /^https?:\/\//.test(data.publicUrl)) {
+            nextUrls.push(data.publicUrl);
+            uploaded = true;
+            break;
+          }
+          lastError = new Error("file URL is not public or invalid.");
+          break;
         }
 
-        const { data } = supabase.storage.from("returns").getPublicUrl(filePath);
-        if (data.publicUrl && /^https?:\/\//.test(data.publicUrl)) {
-          nextUrls.push(data.publicUrl);
-        } else {
-          setSubmitError("Upload failed: file URL is not public or invalid.");
+        if (!uploaded) {
+          throw lastError || new Error("Upload failed.");
         }
       }
 
       setUploadedUrls((prev) => Array.from(new Set([...prev, ...nextUrls])).slice(0, 8));
     } catch (err) {
-      setSubmitError("Upload failed. You can still submit by pasting file URLs manually.");
+      const reason = getUploadErrorMessage(err);
+      setSubmitError(`Upload failed: ${reason}`);
     } finally {
       setUploading(false);
     }
@@ -289,6 +322,10 @@ export default function ReturnsPage() {
     }
   }
 
+  function removeUploadedUrl(url: string) {
+    setUploadedUrls((prev) => prev.filter((item) => item !== url));
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-br from-[#E8F6F6] via-[#F8F9FA] to-[#FEF3E8] pb-24 pt-8 font-sans">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-8">
@@ -311,19 +348,27 @@ export default function ReturnsPage() {
                 You can search using order code or email, or both.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  value={orderCode}
-                  onChange={(e) => setOrderCode(e.target.value)}
-                  placeholder="Order code"
-                  className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
-                />
-                <input
-                  value={lookupEmail}
-                  onChange={(e) => setLookupEmail(e.target.value)}
-                  type="email"
-                  placeholder="Email"
-                  className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
-                />
+                <div>
+                  <input
+                    value={orderCode}
+                    onChange={(e) => setOrderCode(e.target.value)}
+                    minLength={2}
+                    placeholder="Order code"
+                    className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20 w-full"
+                  />
+                  <p className="text-[11px] text-[#6B7280] mt-1">{charCountText(orderCode)}</p>
+                </div>
+                <div>
+                  <input
+                    value={lookupEmail}
+                    onChange={(e) => setLookupEmail(e.target.value)}
+                    type="email"
+                    minLength={2}
+                    placeholder="Email"
+                    className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20 w-full"
+                  />
+                  <p className="text-[11px] text-[#6B7280] mt-1">{charCountText(lookupEmail)}</p>
+                </div>
               </div>
               <button
                 disabled={lookupLoading}
@@ -394,21 +439,29 @@ export default function ReturnsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    required
-                    placeholder="Full name"
-                    className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
-                  />
-                  <input
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    required
-                    type="email"
-                    placeholder="Contact email"
-                    className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
-                  />
+                  <div>
+                    <input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      required
+                      minLength={2}
+                      placeholder="Full name"
+                      className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20 w-full"
+                    />
+                    <p className="text-[11px] text-[#6B7280] mt-1">{charCountText(customerName)}</p>
+                  </div>
+                  <div>
+                    <input
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      required
+                      type="email"
+                      minLength={2}
+                      placeholder="Contact email"
+                      className="bg-white border border-[#E8F6F6] rounded-2xl p-4 outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20 w-full"
+                    />
+                    <p className="text-[11px] text-[#6B7280] mt-1">{charCountText(customerEmail)}</p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,19 +494,23 @@ export default function ReturnsPage() {
                 <input
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
+                  minLength={2}
                   placeholder="Subject (optional, auto-generated if empty)"
                   className="bg-white border border-[#E8F6F6] rounded-2xl p-4 w-full outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
                 />
+                <p className="text-[11px] text-[#6B7280] -mt-2">{charCountText(subject)}</p>
 
                 <div className="space-y-3">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     required
+                    minLength={2}
                     rows={6}
                     placeholder="Describe what happened and what resolution you expect."
                     className="bg-white border border-[#E8F6F6] rounded-2xl p-4 w-full outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
                   />
+                  <p className="text-[11px] text-[#6B7280] -mt-2">{charCountText(message)}</p>
 
                   {detectedIssue && detectedIssue !== issueType && (
                     <p className="text-xs text-[#178E8D] font-bold uppercase tracking-wider font-display">
@@ -492,6 +549,47 @@ export default function ReturnsPage() {
                   {uploadedUrls.length > 0 && (
                     <div className="rounded-2xl border border-[#E8F6F6] p-3 bg-white">
                       <p className="text-xs text-[#1CA7A6] font-bold uppercase tracking-wider font-display mb-2">Uploaded Files</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                        {uploadedUrls.map((url) => {
+                          const isVideo = isVideoUrl(url);
+                          if (isVideo) {
+                            return (
+                              <div key={`preview-${url}`} className="relative">
+                                <video
+                                  src={url}
+                                  className="w-full h-24 rounded-xl object-cover border border-[#E8F6F6]"
+                                  controls
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeUploadedUrl(url)}
+                                  className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black"
+                                  aria-label="Remove uploaded file"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div key={`preview-${url}`} className="relative">
+                              <img
+                                src={url}
+                                alt="Uploaded attachment"
+                                className="w-full h-24 rounded-xl object-cover border border-[#E8F6F6]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeUploadedUrl(url)}
+                                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black"
+                                aria-label="Remove uploaded file"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                       <div className="space-y-1">
                         {uploadedUrls.map((url) => (
                           <p key={url} className="text-xs text-[#6B7280] truncate">{url}</p>
@@ -504,9 +602,11 @@ export default function ReturnsPage() {
                     rows={3}
                     value={manualUrls}
                     onChange={(e) => setManualUrls(e.target.value)}
+                    minLength={2}
                     placeholder="Optional: paste external image/video URLs (one per line)"
                     className="bg-white border border-[#E8F6F6] rounded-2xl p-4 w-full outline-none focus:border-[#1CA7A6] focus:ring-2 focus:ring-[#1CA7A6]/20"
                   />
+                  <p className="text-[11px] text-[#6B7280] -mt-2">{charCountText(manualUrls)}</p>
 
                   <p className="text-xs text-[#6B7280] inline-flex items-center gap-2">
                     <ImagePlus size={12} /> <FileVideo size={12} /> Accepted via upload or direct URLs

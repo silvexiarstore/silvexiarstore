@@ -269,7 +269,7 @@ export default function RegisterPage() {
             variants={itemVariants}
             initial="hidden"
             animate="visible"
-            href="/api/auth/google"
+            href="/api/auth/google?mode=signup"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full border-2 border-slate-200 bg-white text-[#333333] py-3.5 rounded-xl font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-3"

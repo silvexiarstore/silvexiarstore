@@ -12,9 +12,13 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const oauthError = searchParams.get("error");
-  const [error, setError] = useState(
-    oauthError ? "Google sign in failed. Please try again." : ""
-  );
+  const oauthErrorMessage =
+    oauthError === "google_signup_required"
+      ? "No account found with this Google email. Please sign up first."
+      : oauthError
+      ? "Google sign in failed. Please try again."
+      : "";
+  const [error, setError] = useState(oauthErrorMessage);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -224,7 +228,7 @@ export default function LoginPage() {
             variants={itemVariants}
             initial="hidden"
             animate="visible"
-            href="/api/auth/google"
+            href="/api/auth/google?mode=login"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full border-2 border-slate-200 bg-white text-[#333333] py-3.5 rounded-xl font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-3"

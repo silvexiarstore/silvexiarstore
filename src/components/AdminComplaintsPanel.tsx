@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, Mail, MessageSquare, RefreshCw, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, ExternalLink, Loader2, Mail, MessageSquare, RefreshCw, Send } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import { toast } from "sonner";
 
 type ComplaintStatus = "OPEN" | "IN_REVIEW" | "RESOLVED";
+
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|m4v|avi|mkv)(\?.*)?$/i.test(url);
+}
 
 type ComplaintRecord = {
   id: string;
@@ -178,6 +182,17 @@ export default function AdminComplaintsPanel({ initialComplaints }: { initialCom
                   {complaint.message}
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Submitted</p>
+                    <p className="font-semibold text-slate-700">{new Date(complaint.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Payment Status</p>
+                    <p className="font-semibold text-slate-700">{complaint.order.paymentStatus}</p>
+                  </div>
+                </div>
+
                 {complaint.itemTitle && (
                   <p className="text-sm text-slate-600">
                     <span className="font-bold">Item:</span> {complaint.itemTitle}
@@ -187,11 +202,52 @@ export default function AdminComplaintsPanel({ initialComplaints }: { initialCom
                 {complaint.attachments.length > 0 && (
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Attachments</p>
-                    <div className="space-y-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+                      {complaint.attachments.map((url) => {
+                        if (isVideoUrl(url)) {
+                          return (
+                            <div key={`preview-${url}`} className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50">
+                              <video src={url} controls className="w-full h-44 object-cover" />
+                            </div>
+                          );
+                        }
+                        return (
+                          <a
+                            key={`preview-${url}`}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 block"
+                          >
+                            <img src={url} alt="Attachment" className="w-full h-44 object-cover" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                    <div className="space-y-2">
                       {complaint.attachments.map((url) => (
-                        <a key={url} href={url} target="_blank" rel="noreferrer" className="block text-sm text-sky-700 hover:underline truncate">
-                          {url}
-                        </a>
+                        <div key={url} className="flex items-center gap-2">
+                          <a href={url} target="_blank" rel="noreferrer" className="block text-sm text-sky-700 hover:underline truncate flex-1">
+                            {url}
+                          </a>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            <ExternalLink size={12} />
+                            Open
+                          </a>
+                          <a
+                            href={url}
+                            download
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            <Download size={12} />
+                            Download
+                          </a>
+                        </div>
                       ))}
                     </div>
                   </div>

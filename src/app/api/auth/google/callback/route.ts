@@ -29,8 +29,11 @@ export async function GET(req: Request) {
 
   const cookieStore = await cookies();
   const storedState = cookieStore.get("oauth_google_state")?.value;
+  const oauthMode = cookieStore.get("oauth_google_mode")?.value === "signup" ? "signup" : "login";
 
   if (!storedState || storedState !== state) {
+    cookieStore.delete("oauth_google_state");
+    cookieStore.delete("oauth_google_mode");
     loginUrl.searchParams.set("error", "google_auth_state");
     return NextResponse.redirect(loginUrl);
   }
@@ -39,6 +42,8 @@ export async function GET(req: Request) {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
+    cookieStore.delete("oauth_google_state");
+    cookieStore.delete("oauth_google_mode");
     loginUrl.searchParams.set("error", "google_auth_config");
     return NextResponse.redirect(loginUrl);
   }
@@ -81,6 +86,13 @@ export async function GET(req: Request) {
 
     let user = await prisma.user.findUnique({ where: { email } });
 
+    if (!user && oauthMode === "login") {
+      cookieStore.delete("oauth_google_state");
+      cookieStore.delete("oauth_google_mode");
+      loginUrl.searchParams.set("error", "google_signup_required");
+      return NextResponse.redirect(loginUrl);
+    }
+
     if (!user) {
       const randomPassword = crypto.randomBytes(32).toString("hex");
       const passwordHash = await bcrypt.hash(randomPassword, 12);
@@ -110,15 +122,18 @@ export async function GET(req: Request) {
     cookieStore.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 60 * 60 * 24,
       path: "/",
     });
     cookieStore.delete("oauth_google_state");
+    cookieStore.delete("oauth_google_mode");
 
     return NextResponse.redirect(new URL("/account", req.url));
   } catch (error) {
     console.error("Google callback error:", error);
+    cookieStore.delete("oauth_google_state");
+    cookieStore.delete("oauth_google_mode");
     loginUrl.searchParams.set("error", "google_auth_failed");
     return NextResponse.redirect(loginUrl);
   }

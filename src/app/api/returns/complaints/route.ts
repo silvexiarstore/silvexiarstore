@@ -12,14 +12,19 @@ import {
 
 const complaintSchema = z.object({
   orderId: z.string().min(8),
-  orderCode: z.string().trim().optional().default(""),
-  lookupEmail: z.string().trim().optional().default(""),
-  customerName: z.string().min(2).max(100),
+  orderCode: z.string().trim().optional().default("").refine((value) => value === "" || value.length >= 2),
+  lookupEmail: z.string().trim().optional().default("").refine((value) => value === "" || value.length >= 2),
+  customerName: z.string().trim().min(2),
   customerEmail: z.string().email(),
   issueType: z.enum(["NOT_RECEIVED", "DAMAGED", "WRONG_ITEM", "DEFECTIVE", "MISSING_PARTS", "OTHER"]),
-  subject: z.string().min(4).max(140),
-  message: z.string().min(15).max(4000),
-  itemTitle: z.string().max(180).optional().nullable(),
+  subject: z.string().trim().min(2),
+  message: z.string().trim().min(2),
+  itemTitle: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .refine((value) => value == null || value === "" || value.length >= 2),
   attachments: z.array(z.string().url()).max(8).default([]),
 });
 
@@ -52,8 +57,23 @@ export async function POST(req: Request) {
     }
 
     if (session?.userId) {
-      if (order.userId !== (session.userId as string)) {
-        return NextResponse.json({ error: "You cannot submit a complaint for this order." }, { status: 403 });
+      const isOwner = order.userId === (session.userId as string);
+      if (!isOwner) {
+        const providedEmail = (payload.lookupEmail || payload.customerEmail || "").toLowerCase().trim();
+        const knownEmails = [order.user.email, order.address?.email]
+          .filter(Boolean)
+          .map((value) => String(value).toLowerCase().trim());
+        const emailMatchesOrder = providedEmail ? knownEmails.includes(providedEmail) : false;
+
+        if (!emailMatchesOrder) {
+          return NextResponse.json(
+            {
+              error:
+                "This order is linked to another account. Use the same email used at checkout to submit this complaint.",
+            },
+            { status: 403 },
+          );
+        }
       }
     } else {
       const codeOk = payload.orderCode
@@ -81,9 +101,9 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!payload.subject.trim() || !payload.message.trim()) {
+    if (payload.subject.trim().length < 2 || payload.message.trim().length < 2) {
       return NextResponse.json(
-        { error: "Subject and message are required." },
+        { error: "Subject and message must contain at least 2 characters." },
         { status: 400 },
       );
     }
