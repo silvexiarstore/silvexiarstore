@@ -58,15 +58,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background blobs */}
       <motion.div
-        className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-orange-500/10 to-transparent rounded-full blur-3xl"
+        className="absolute top-0 right-0 w-96 h-96 bg-linear-to-br from-orange-500/10 to-transparent rounded-full blur-3xl"
         animate={{ y: [0, 30, 0] }}
         transition={{ repeat: Infinity, duration: 5 }}
       />
       <motion.div
-        className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tl from-cyan-500/10 to-transparent rounded-full blur-3xl"
+        className="absolute bottom-0 left-0 w-80 h-80 bg-linear-to-tl from-cyan-500/10 to-transparent rounded-full blur-3xl"
         animate={{ y: [0, -30, 0] }}
         transition={{ repeat: Infinity, duration: 6, delay: 0.5 }}
       />

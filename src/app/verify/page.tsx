@@ -5,7 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { MotionDiv } from "@/components/MotionDiv";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
-export default function VerifyPage() {
+import { Suspense } from "react";
+
+function VerifyPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -48,5 +50,13 @@ export default function VerifyPage() {
         )}
       </MotionDiv>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense>
+      <VerifyPageInner />
+    </Suspense>
   );
 }

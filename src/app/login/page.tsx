@@ -7,7 +7,9 @@ import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, LogIn, Loader2, Eye, EyeOff } from "lucide-react";
 import GoogleIcon from "@/components/GoogleIcon";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -258,5 +260,13 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
   );
 }

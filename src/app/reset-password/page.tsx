@@ -6,7 +6,9 @@ import { MotionDiv } from "@/components/MotionDiv";
 import { Lock, CheckCircle, ArrowRight, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
-export default function ResetPasswordPage() {
+import { Suspense } from "react";
+
+function ResetPasswordPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token"); // جلب التوكن من الرابط
@@ -67,7 +69,7 @@ export default function ResetPasswordPage() {
       <MotionDiv 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-[500px] w-full z-10"
+        className="max-w-125 w-full z-10"
       >
         <div className="bg-white rounded-[3.5rem] p-10 md:p-14 shadow-2xl border border-gray-50 relative">
           
@@ -148,5 +150,13 @@ export default function ResetPasswordPage() {
         </p>
       </MotionDiv>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordPageInner />
+    </Suspense>
   );
 }
