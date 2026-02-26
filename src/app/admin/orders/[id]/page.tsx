@@ -224,7 +224,31 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
               </div>
             </div>
 
-            {/* 3. SHIPPING ADDRESS */}
+            {/* 3. PAYMENT REFERENCES */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50">
+              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-50">
+                <span className="bg-emerald-100 text-emerald-600 p-1.5 rounded-lg text-sm">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a5 5 0 00-10 0v2m-2 0h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z"></path></svg>
+                </span>
+                Payment References
+              </h3>
+              <div className="space-y-3 text-sm text-slate-600">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">PayPal Order ID</p>
+                  <p className="font-mono text-xs bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-2 break-all">
+                    {order.transactionId || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">PayPal Invoice ID</p>
+                  <p className="font-mono text-xs bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-2 break-all">
+                    {order.paypalInvoiceId || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. SHIPPING ADDRESS */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50">
               <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-50">
                 <span className="bg-orange-100 text-orange-600 p-1.5 rounded-lg text-sm">

@@ -8,7 +8,12 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
-  specs?: any[]; // Store selected options (shipping, color, etc.)
+  specs?: CartSpec[]; // Store selected options (shipping, color, etc.)
+}
+
+export interface CartSpec {
+  name: string;
+  value: string | number;
 }
 
 interface CartState {

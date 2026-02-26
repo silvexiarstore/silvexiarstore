@@ -5,6 +5,7 @@ import ShopFilters from "@/components/ShopFilters";
 import { MotionDiv } from "@/components/MotionDiv";
 import { ShoppingBag, SlidersHorizontal, PackageOpen } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const deliveryMax = params.deliveryMax ? parseInt(params.deliveryMax, 10) : undefined;
 
   // 1. Build Query
-  const whereClause: any = {};
+  const whereClause: Prisma.ProductWhereInput = {};
   if (searchQuery) {
     whereClause.OR = [
       { title: { contains: searchQuery, mode: "insensitive" } },
@@ -54,34 +55,35 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     if (maxPrice !== undefined) whereClause.price.lte = maxPrice;
   }
   if (shippingMethod === "FREE" || shippingMethod === "FAST" || shippingMethod === "SUPER_FAST") {
-    const shippingPrefix =
-      shippingMethod === "FREE"
-        ? "freeShipping"
-        : shippingMethod === "FAST"
-          ? "fastShipping"
-          : "superFast";
+    const shippingPriceFilter: Prisma.DecimalNullableFilter = {};
+    if (shippingMin !== undefined) shippingPriceFilter.gte = shippingMin;
+    if (shippingMax !== undefined) shippingPriceFilter.lte = shippingMax;
 
-    whereClause[`${shippingPrefix}Enabled`] = true;
-
-    if (shippingMin !== undefined || shippingMax !== undefined) {
-      whereClause[`${shippingPrefix}Price`] = {};
-      if (shippingMin !== undefined) {
-        whereClause[`${shippingPrefix}Price`].gte = shippingMin;
+    if (shippingMethod === "FREE") {
+      whereClause.freeShippingEnabled = true;
+      if (shippingMin !== undefined || shippingMax !== undefined) {
+        whereClause.freeShippingPrice = shippingPriceFilter;
       }
-      if (shippingMax !== undefined) {
-        whereClause[`${shippingPrefix}Price`].lte = shippingMax;
+      if (deliveryMin !== undefined) whereClause.freeShippingMaxDeliveryDays = { gte: deliveryMin };
+      if (deliveryMax !== undefined) whereClause.freeShippingMinDeliveryDays = { lte: deliveryMax };
+    } else if (shippingMethod === "FAST") {
+      whereClause.fastShippingEnabled = true;
+      if (shippingMin !== undefined || shippingMax !== undefined) {
+        whereClause.fastShippingPrice = shippingPriceFilter;
       }
-    }
-
-    if (deliveryMin !== undefined) {
-      whereClause[`${shippingPrefix}MaxDeliveryDays`] = { gte: deliveryMin };
-    }
-    if (deliveryMax !== undefined) {
-      whereClause[`${shippingPrefix}MinDeliveryDays`] = { lte: deliveryMax };
+      if (deliveryMin !== undefined) whereClause.fastShippingMaxDeliveryDays = { gte: deliveryMin };
+      if (deliveryMax !== undefined) whereClause.fastShippingMinDeliveryDays = { lte: deliveryMax };
+    } else {
+      whereClause.superFastShippingEnabled = true;
+      if (shippingMin !== undefined || shippingMax !== undefined) {
+        whereClause.superFastPrice = shippingPriceFilter;
+      }
+      if (deliveryMin !== undefined) whereClause.superFastMaxDeliveryDays = { gte: deliveryMin };
+      if (deliveryMax !== undefined) whereClause.superFastMinDeliveryDays = { lte: deliveryMax };
     }
   }
 
-  let orderBy: any = {};
+  let orderBy: Prisma.ProductOrderByWithRelationInput = {};
   switch (sort) {
     case "price_asc": orderBy = { price: "asc" }; break;
     case "price_desc": orderBy = { price: "desc" }; break;

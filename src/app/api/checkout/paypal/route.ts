@@ -52,6 +52,17 @@ interface CaptureOrderPayload {
 
 type ShippingMethod = "FREE" | "FAST" | "SUPER_FAST";
 
+function clampPayPalText(value: string, max = 127) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "Product";
+  return normalized.length > max ? normalized.slice(0, max) : normalized;
+}
+
+function generatePayPalInvoiceId() {
+  const token = randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
+  return `SILV-${Date.now()}-${token}`;
+}
+
 function getSpecValue(item: CheckoutCartItem, specName: string) {
   return item.specs?.find((spec) => spec.name === specName)?.value;
 }
@@ -93,14 +104,15 @@ async function computeCheckoutPricing(cartItems: CheckoutCartItem[]) {
     throw new Error("Cart is empty");
   }
 
-  const productIds = cartItems.map((item) => item.productId || item.id).filter(Boolean);
+  const productIds = [...new Set(cartItems.map((item) => item.productId || item.id).filter(Boolean))];
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    select: { id: true, price: true },
+    select: { id: true, title: true, price: true },
   });
   const productsById = new Map(products.map((product) => [product.id, product]));
 
   let trustedTotal = 0;
+  let merchandiseTotal = 0;
   let shippingCostTotal = 0;
   let minDeliveryDays: number | null = null;
   let maxDeliveryDays: number | null = null;
@@ -141,10 +153,12 @@ async function computeCheckoutPricing(cartItems: CheckoutCartItem[]) {
     }
 
     trustedTotal += (unitPrice + unitShippingCost) * quantity;
+    merchandiseTotal += unitPrice * quantity;
     shippingCostTotal += unitShippingCost * quantity;
 
     return {
       productId,
+      title: clampPayPalText(item.title || product.title || `Item ${index + 1}`),
       quantity,
       price: unitPrice,
     };
@@ -152,6 +166,7 @@ async function computeCheckoutPricing(cartItems: CheckoutCartItem[]) {
 
   return {
     trustedTotal: Number(trustedTotal.toFixed(2)),
+    merchandiseTotal: Number(merchandiseTotal.toFixed(2)),
     shippingCostTotal: Number(shippingCostTotal.toFixed(2)),
     minDeliveryDays,
     maxDeliveryDays,
@@ -190,7 +205,6 @@ async function generateAccessToken() {
 
 export async function POST(req: Request) {
   try {
-    console.log("--- STEP 1: CREATING PAYPAL ORDER ---");
     const { cartItems, cartTotal }: CreateOrderPayload = await req.json();
     const pricing = await computeCheckoutPricing(cartItems);
 
@@ -210,6 +224,17 @@ export async function POST(req: Request) {
     }
 
     const accessToken = await generateAccessToken();
+    const invoiceId = generatePayPalInvoiceId();
+    const customId = clampPayPalText(`silvexiar_checkout_${invoiceId}`, 127);
+    const paypalItems = pricing.orderItems.map((item) => ({
+      name: clampPayPalText(item.title),
+      quantity: String(item.quantity),
+      unit_amount: {
+        currency_code: "USD",
+        value: item.price.toFixed(2),
+      },
+      category: "PHYSICAL_GOODS",
+    }));
     const response = await fetch(`${base}/v2/checkout/orders`, {
       method: "POST",
       headers: {
@@ -218,7 +243,28 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         intent: "CAPTURE",
-        purchase_units: [{ amount: { currency_code: "USD", value: pricing.trustedTotal.toFixed(2) } }],
+        purchase_units: [
+          {
+            description: "Silvexiar Store Order",
+            custom_id: customId,
+            invoice_id: invoiceId,
+            items: paypalItems,
+            amount: {
+              currency_code: "USD",
+              value: pricing.trustedTotal.toFixed(2),
+              breakdown: {
+                item_total: {
+                  currency_code: "USD",
+                  value: pricing.merchandiseTotal.toFixed(2),
+                },
+                shipping: {
+                  currency_code: "USD",
+                  value: pricing.shippingCostTotal.toFixed(2),
+                },
+              },
+            },
+          },
+        ],
       }),
     });
 
@@ -228,7 +274,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: paypalDescription, details: data }, { status: 400 });
     }
 
-    console.log("PayPal Order Created:", data.id);
     return NextResponse.json(data);
   } catch (error) {
     console.error("CREATE_ORDER_ERROR:", error);
@@ -250,8 +295,6 @@ export async function PATCH(req: Request) {
         { status: 400 },
       );
     }
-
-    console.log(`--- PROCESSING ORDER ${orderID} ---`);
 
     const accessToken = await generateAccessToken();
     const response = await fetch(`${base}/v2/checkout/orders/${orderID}/capture`, {
@@ -278,6 +321,11 @@ export async function PATCH(req: Request) {
         { status: 400 },
       );
     }
+    const paypalInvoiceIdRaw = data?.purchase_units?.[0]?.invoice_id;
+    const paypalInvoiceId =
+      typeof paypalInvoiceIdRaw === "string" && paypalInvoiceIdRaw.trim()
+        ? clampPayPalText(paypalInvoiceIdRaw.trim())
+        : null;
 
     let orderUserId = session?.userId as string | undefined;
     let resolvedShippingAddressId: string | undefined = shippingAddressId;
@@ -357,6 +405,7 @@ export async function PATCH(req: Request) {
         paymentStatus: "PAID",
         shippingAddressId: resolvedShippingAddressId,
         transactionId: orderID,
+        paypalInvoiceId,
         shippingMethod: pricing.shippingMethod,
         shippingCost: pricing.shippingCostTotal,
         minDeliveryDays: pricing.minDeliveryDays,
@@ -380,15 +429,15 @@ export async function PATCH(req: Request) {
     const customerName = customer?.fullName || guestAddress?.fullName || "Customer";
     const customerEmail = customer?.email || recipientEmail || "guest@silvexiar.local";
 
+    const emailItems = cartItems.map((item) => ({
+      title: item.title || item.productId || item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+    const emailTasks: Promise<unknown>[] = [];
     if (recipientEmail) {
-      const emailItems = cartItems.map((item) => ({
-        title: item.title || item.productId || item.id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-
-      try {
-        await sendCustomerOrderStatusEmail({
+      emailTasks.push(
+        sendCustomerOrderStatusEmail({
           to: recipientEmail,
           customerName,
           orderId: order.id,
@@ -400,32 +449,33 @@ export async function PATCH(req: Request) {
           minDeliveryDays: order.minDeliveryDays,
           maxDeliveryDays: order.maxDeliveryDays,
           items: emailItems,
-        });
-      } catch (emailError) {
-        console.error("CUSTOMER_ORDER_EMAIL_ERROR:", emailError);
-      }
-
-      try {
-        await sendAdminNewOrderEmail({
-          orderId: order.id,
-          createdAt: order.createdAt,
-          totalAmount: order.totalAmount,
-          status: order.status,
-          paymentStatus: order.paymentStatus,
-          customerName,
-          customerEmail,
-          shippingMethod: order.shippingMethod,
-          shippingCost: order.shippingCost,
-          minDeliveryDays: order.minDeliveryDays,
-          maxDeliveryDays: order.maxDeliveryDays,
-          items: emailItems,
-        });
-      } catch (emailError) {
-        console.error("ADMIN_ORDER_EMAIL_ERROR:", emailError);
+        }),
+      );
+    }
+    emailTasks.push(
+      sendAdminNewOrderEmail({
+        orderId: order.id,
+        createdAt: order.createdAt,
+        totalAmount: order.totalAmount,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        customerName,
+        customerEmail,
+        shippingMethod: order.shippingMethod,
+        shippingCost: order.shippingCost,
+        minDeliveryDays: order.minDeliveryDays,
+        maxDeliveryDays: order.maxDeliveryDays,
+        items: emailItems,
+      }),
+    );
+    const emailResults = await Promise.allSettled(emailTasks);
+    for (const [index, result] of emailResults.entries()) {
+      if (result.status === "rejected") {
+        const label = recipientEmail ? (index === 0 ? "CUSTOMER_ORDER_EMAIL_ERROR" : "ADMIN_ORDER_EMAIL_ERROR") : "ADMIN_ORDER_EMAIL_ERROR";
+        console.error(label, result.reason);
       }
     }
 
-    console.log("ORDER SAVED SUCCESSFULLY! ID:", order.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("CRITICAL_ERROR:", error);

@@ -15,6 +15,11 @@ import {
   Package,
 } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import type { CartSpec } from "@/store/cart";
+
+function getSpecValue(specs: CartSpec[] | undefined, name: string): string | number | undefined {
+  return specs?.find((spec) => spec.name === name)?.value;
+}
 
 export default function CartDrawer() {
   const {
@@ -126,24 +131,12 @@ export default function CartDrawer() {
                         <h3 className="text-xs font-semibold text-[var(--text-primary)] line-clamp-1">
                           {item.title}
                         </h3>
-                        {item.specs?.find(
-                          (spec: any) => spec.name === "Shipping"
-                        )?.value && (
+                        {getSpecValue(item.specs, "Shipping") && (
                           <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                            {String(
-                              item.specs.find(
-                                (spec: any) => spec.name === "Shipping"
-                              )?.value
-                            ).replace("_", " ")}{" "}
+                            {String(getSpecValue(item.specs, "Shipping")).replace("_", " ")}{" "}
                             -{" "}
                             {(() => {
-                              const shippingCost =
-                                Number(
-                                  item.specs?.find(
-                                    (spec: any) =>
-                                      spec.name === "Shipping Cost"
-                                  )?.value
-                                ) || 0;
+                              const shippingCost = Number(getSpecValue(item.specs, "Shipping Cost")) || 0;
                               return shippingCost > 0
                                 ? formatMoney(shippingCost)
                                 : "Free";

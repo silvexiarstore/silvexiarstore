@@ -20,6 +20,7 @@ import {
 // Components
 import DeleteCategoryButton from "@/components/DeleteCategoryButton";
 import EditCategoryModal from "@/components/EditCategoryModal";
+import HomepageSettingsManager from "@/components/admin/HomepageSettingsManager";
 
 export default function AdminSettingsPage() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -227,6 +228,8 @@ export default function AdminSettingsPage() {
           </div>
 
         </div>
+
+        <HomepageSettingsManager />
 
         {/* Branding Footer */}
         <div className="text-center pb-10">

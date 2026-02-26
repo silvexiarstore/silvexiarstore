@@ -1,191 +1,219 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
-const SLIDES = [
-  {
-    id: 1,
-    image:
-      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop",
-    tag: "Spring Collection",
-    title: "Earthy Elegance",
-    subtitle:
-      "Discover organic textures and warm tones designed for mindful living.",
-    link: "/shop",
-  },
-  {
-    id: 2,
-    image:
-      "https://images.unsplash.com/photo-1449247709967-d4461a6a6103?q=80&w=2000&auto=format&fit=crop",
-    tag: "Minimalist Space",
-    title: "Curated Comfort",
-    subtitle:
-      "Transform your surroundings with pieces that speak volumes through silence.",
-    link: "/shop",
-  },
-  {
-    id: 3,
-    image:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop",
-    tag: "Essential Wardrobe",
-    title: "Timeless Form",
-    subtitle:
-      "Sartorial staples built to outlast trends and elevate your everyday.",
-    link: "/shop",
-  },
-];
+export interface HeroSlideItem {
+  id: string;
+  badge?: string | null;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  ctaLink: string;
+  desktopImage: string;
+  mobileImage: string;
+  desktopImages?: string[];
+  mobileImages?: string[];
+  showText?: boolean;
+  frameBadges?: string[];
+  frameTitles?: string[];
+  frameSubtitles?: string[];
+  frameShowText?: boolean[];
+}
 
-export default function HeroSlider() {
-  const [current, setCurrent] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+interface HeroFrame {
+  id: string;
+  badge?: string | null;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  ctaLink: string;
+  desktopImage: string;
+  mobileImage: string;
+  showText: boolean;
+}
 
-  const goNext = useCallback(() => {
-    setCurrent((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1));
-  }, []);
+interface HeroSliderProps {
+  slides: HeroSlideItem[];
+}
 
-  const goPrev = useCallback(() => {
-    setCurrent((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1));
-  }, []);
+export default function HeroSlider({ slides }: HeroSliderProps) {
+  const frames = useMemo<HeroFrame[]>(() => {
+    const list: HeroFrame[] = [];
 
-  // Autoplay with hover pause
+    for (const slide of slides) {
+      const desktops = Array.isArray(slide.desktopImages) && slide.desktopImages.length > 0
+        ? slide.desktopImages
+        : slide.desktopImage
+          ? [slide.desktopImage]
+          : [];
+      const mobiles = Array.isArray(slide.mobileImages) && slide.mobileImages.length > 0
+        ? slide.mobileImages
+        : slide.mobileImage
+          ? [slide.mobileImage]
+          : [];
+
+      const count = Math.max(desktops.length, mobiles.length);
+      for (let i = 0; i < count; i += 1) {
+        const desktop = desktops[i] || desktops[0] || "";
+        const mobile = mobiles[i] || mobiles[0] || desktop;
+        if (!desktop || !mobile) continue;
+        list.push({
+          id: `${slide.id}-${i}`,
+          ctaLabel: slide.ctaLabel,
+          ctaLink: slide.ctaLink,
+          desktopImage: desktop,
+          mobileImage: mobile,
+          badge: (slide.frameBadges && slide.frameBadges[i]) || slide.badge,
+          title: (slide.frameTitles && slide.frameTitles[i]) || slide.title,
+          subtitle: (slide.frameSubtitles && slide.frameSubtitles[i]) || slide.subtitle,
+          showText: Array.isArray(slide.frameShowText) && typeof slide.frameShowText[i] === "boolean"
+            ? Boolean(slide.frameShowText[i])
+            : slide.showText !== false,
+        });
+      }
+    }
+
+    return list;
+  }, [slides]);
+
+  const [index, setIndex] = useState(0);
+  const [pause, setPause] = useState(false);
+
   useEffect(() => {
-    if (isHovered) return;
-    const timer = setInterval(goNext, 6000);
-    return () => clearInterval(timer);
-  }, [goNext, isHovered]);
+    setIndex(0);
+  }, [frames.length]);
 
-  const imageVariants = {
-    enter: { opacity: 0, scale: 1.05 },
-    center: { opacity: 1, scale: 1, transition: { duration: 1.2, ease: "easeOut" } },
-    exit: { opacity: 0, transition: { duration: 0.8 } },
-  } as const;
+  const next = useCallback(() => {
+    if (frames.length < 2) return;
+    setIndex((prev) => (prev + 1) % frames.length);
+  }, [frames.length]);
 
-  const textVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
+  const prev = useCallback(() => {
+    if (frames.length < 2) return;
+    setIndex((prev) => (prev === 0 ? frames.length - 1 : prev - 1));
+  }, [frames.length]);
+
+  useEffect(() => {
+    if (pause || frames.length < 2) return;
+    const id = setInterval(next, 5000);
+    return () => clearInterval(id);
+  }, [pause, next, frames.length]);
+
+  if (frames.length === 0) {
+    return (
+      <section className="relative min-h-[70vh] bg-slate-900 flex items-center justify-center text-white">
+        <div className="text-center px-6">
+          <p className="text-xs uppercase tracking-[0.35em] text-white/60 font-bold mb-4">Silvexiar</p>
+          <h1 className="text-4xl md:text-6xl font-black">New Season Drops</h1>
+          <p className="text-white/70 mt-4">Add hero slides from Admin Settings.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const current = frames[index];
 
   return (
-    <section 
-      className="relative w-full h-[75vh] md:h-[90vh] overflow-hidden bg-stone-100 font-sans"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <section
+      className="relative min-h-[78vh] md:min-h-[92vh] overflow-hidden"
+      onMouseEnter={() => setPause(true)}
+      onMouseLeave={() => setPause(false)}
     >
-      {/* 1. Full-Bleed Background Images */}
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="wait">
         <motion.div
-          key={SLIDES[current].id}
-          variants={imageVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
+          key={current.id}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.85, ease: "easeOut" }}
           className="absolute inset-0"
         >
-          <Image
-            src={SLIDES[current].image}
-            alt={SLIDES[current].title}
-            fill
-            className="object-cover object-center"
-            priority
-          />
+          <picture>
+            <source media="(max-width: 767px)" srcSet={current.mobileImage} />
+            <img src={current.desktopImage} alt={current.title} className="w-full h-full object-cover" />
+          </picture>
         </motion.div>
       </AnimatePresence>
 
-      {/* 2. Texture & Gradient Overlays */}
-      {/* Dark vignette for text readability */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
-      {/* Subtle noise texture */}
-      <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-slate-900/40 to-black/65" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,225,255,0.20),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,166,0,0.25),transparent_35%)]" />
 
-      {/* 3. Floating Glassmorphic Content Card */}
-      <div className="absolute inset-0 flex items-end md:items-center px-6 md:px-16 lg:px-24 pb-24 md:pb-0">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={SLIDES[current].id}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
-            className="w-full max-w-xl bg-white/70 backdrop-blur-xl border border-white/40 p-8 md:p-12 rounded-3xl shadow-2xl shadow-black/10"
-          >
-            {/* Tag */}
-            <motion.div variants={textVariants} className="mb-4">
-              <span className="text-amber-700 text-sm font-semibold tracking-widest uppercase">
-                {SLIDES[current].tag}
-              </span>
-            </motion.div>
-
-            {/* Title */}
-            <motion.h1
-              variants={textVariants}
-              className="text-4xl md:text-5xl lg:text-6xl font-light text-stone-900 mb-4 leading-tight"
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 h-[78vh] md:h-[92vh] flex items-end md:items-center pb-16 md:pb-0">
+        {current.showText && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`content-${current.id}`}
+              initial={{ opacity: 0, y: 26 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 14 }}
+              transition={{ duration: 0.45 }}
+              className="w-full max-w-xl"
             >
-              {SLIDES[current].title}
-            </motion.h1>
+              <div className="rounded-[2rem] bg-white/10 border border-white/30 backdrop-blur-xl p-6 md:p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                {current.badge && (
+                  <p className="text-[10px] md:text-xs uppercase tracking-[0.28em] font-black text-cyan-200 mb-4">
+                    {current.badge}
+                  </p>
+                )}
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-[1] text-white drop-shadow-[0_10px_35px_rgba(0,0,0,0.5)]">
+                  {current.title}
+                </h1>
+                <p className="mt-4 text-xs md:text-sm text-white/85 max-w-lg leading-relaxed">
+                  {current.subtitle}
+                </p>
 
-            {/* Subtitle */}
-            <motion.p
-              variants={textVariants}
-              className="text-stone-600 text-lg md:text-xl mb-8 leading-relaxed font-light"
-            >
-              {SLIDES[current].subtitle}
-            </motion.p>
-
-            {/* CTA & Controls Container */}
-            <motion.div variants={textVariants} className="flex flex-wrap items-center justify-between gap-6">
-              <Link
-                href={SLIDES[current].link}
-                className="group flex items-center gap-3 px-7 py-3.5 bg-stone-900 text-white rounded-full hover:bg-stone-800 transition-colors duration-300"
-              >
-                <span className="font-medium">Explore Collection</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-
-              {/* Integrated Arrow Controls */}
-              <div className="flex gap-2">
-                <button
-                  onClick={goPrev}
-                  className="p-3 rounded-full border border-stone-300 text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-all"
-                  aria-label="Previous slide"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={goNext}
-                  className="p-3 rounded-full border border-stone-300 text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-all"
-                  aria-label="Next slide"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+                <div className="mt-6 flex items-center gap-3">
+                  <Link
+                    href={current.ctaLink || "/shop"}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-cyan-400 text-slate-900 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-cyan-300 transition-all shadow-[0_15px_40px_rgba(34,211,238,0.45)]"
+                  >
+                    {current.ctaLabel || "Explore Now"}
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
             </motion.div>
-          </motion.div>
-        </AnimatePresence>
+          </AnimatePresence>
+        )}
       </div>
 
-      {/* 4. Minimalist Progress Dots (Bottom Right) */}
-      <div className="absolute bottom-8 right-8 md:right-16 flex items-center gap-3 z-20">
-        {SLIDES.map((slide, index) => (
-          <button
-            key={slide.id}
-            onClick={() => setCurrent(index)}
-            className="group py-4 px-1"
-            aria-label={`Go to slide ${index + 1}`}
-          >
-            <div
-              className={`h-0.5 transition-all duration-500 rounded-full ${
-                index === current
-                  ? "w-10 bg-white"
-                  : "w-4 bg-white/40 group-hover:bg-white/70"
-              }`}
-            />
-          </button>
-        ))}
-      </div>
+      {frames.length > 1 && (
+        <>
+          <div className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={prev}
+              className="w-11 h-11 rounded-xl bg-white/20 border border-white/30 text-white hover:bg-white/35 transition-all flex items-center justify-center"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              className="w-11 h-11 rounded-xl bg-white/20 border border-white/30 text-white hover:bg-white/35 transition-all flex items-center justify-center"
+              aria-label="Next slide"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5">
+            {frames.map((frame, i) => (
+              <button
+                key={frame.id}
+                type="button"
+                aria-label={`Go to slide ${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-10 bg-white" : "w-4 bg-white/45 hover:bg-white/80"}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCartStore } from "@/store/cart";
 import { useRouter } from "next/navigation";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -25,6 +25,8 @@ interface ProductSpec {
   name: string;
   value: string | number;
 }
+
+const VALID_SHIPPING_METHODS = new Set(["FREE", "FAST", "SUPER_FAST"]);
 
 function getReadablePayPalError(err: unknown) {
   if (err instanceof Error && err.message) return err.message;
@@ -55,24 +57,30 @@ function getReadablePayPalError(err: unknown) {
 export default function CheckoutPage() {
   const { items, getCartTotal, clearCart } = useCartStore();
   const router = useRouter();
-  const rawShippingMethod = (items[0]?.specs as ProductSpec[] | undefined)?.find(
-    (spec) => spec.name === "Shipping",
-  )?.value;
-  const selectedShippingMethod: "FREE" | "FAST" | "SUPER_FAST" =
-    rawShippingMethod === "SUPER-FAST"
-      ? "SUPER_FAST"
-      : ["FREE", "FAST", "SUPER_FAST"].includes(String(rawShippingMethod))
-        ? (String(rawShippingMethod) as "FREE" | "FAST" | "SUPER_FAST")
-        : "FREE";
-  const totalShippingCost = items.reduce((total, item) => {
-    const shippingCost =
-      Number(
-        (item.specs as ProductSpec[] | undefined)?.find(
-          (spec) => spec.name === "Shipping Cost",
-        )?.value,
-      ) || 0;
-    return total + shippingCost * item.quantity;
-  }, 0);
+  const selectedShippingMethod: "FREE" | "FAST" | "SUPER_FAST" = useMemo(() => {
+    const rawShippingMethod = (items[0]?.specs as ProductSpec[] | undefined)?.find(
+      (spec) => spec.name === "Shipping",
+    )?.value;
+    if (rawShippingMethod === "SUPER-FAST") return "SUPER_FAST";
+    const normalized = String(rawShippingMethod || "FREE");
+    return VALID_SHIPPING_METHODS.has(normalized)
+      ? (normalized as "FREE" | "FAST" | "SUPER_FAST")
+      : "FREE";
+  }, [items]);
+
+  const totalShippingCost = useMemo(
+    () =>
+      items.reduce((total, item) => {
+        const shippingCost =
+          Number(
+            (item.specs as ProductSpec[] | undefined)?.find(
+              (spec) => spec.name === "Shipping Cost",
+            )?.value,
+          ) || 0;
+        return total + shippingCost * item.quantity;
+      }, 0),
+    [items],
+  );
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -137,8 +145,11 @@ export default function CheckoutPage() {
       newAddress.addressLine,
   );
   const canPay = isGuestCheckout ? guestAddressComplete : Boolean(selectedAddressId);
-  const payableTotal = getCartTotal();
-  const subtotal = Math.max(0, payableTotal - totalShippingCost);
+  const payableTotal = useMemo(() => getCartTotal(), [getCartTotal, items]);
+  const subtotal = useMemo(
+    () => Math.max(0, payableTotal - totalShippingCost),
+    [payableTotal, totalShippingCost],
+  );
 
   return (
     <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!, currency: "USD" }}>

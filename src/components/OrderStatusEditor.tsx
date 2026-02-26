@@ -3,21 +3,30 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { 
-  Check, 
-  ChevronDown, 
-  Truck, 
-  Package, 
-  Clock, 
-  XCircle, 
-  CreditCard, 
-  Ban, 
+import {
+  Check,
+  ChevronDown,
+  Truck,
+  Package,
+  Clock,
+  XCircle,
+  CreditCard,
+  Ban,
   Loader2,
-  LucideIcon 
 } from "lucide-react";
 
-// 1. تعريف الخيارات والأيقونات
-const STATUS_OPTIONS = [
+type OrderStatusValue = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+type PaymentStatusValue = "UNPAID" | "PAID" | "REFUNDED" | "FAILED";
+type IconType = typeof Clock;
+
+type SelectOption<T extends string> = {
+  value: T;
+  label: string;
+  icon: IconType;
+  color: string;
+};
+
+const STATUS_OPTIONS: SelectOption<OrderStatusValue>[] = [
   { value: "PENDING", label: "Pending", icon: Clock, color: "text-gray-500 bg-gray-50" },
   { value: "PROCESSING", label: "Processing", icon: Loader2, color: "text-blue-500 bg-blue-50" },
   { value: "SHIPPED", label: "Shipped", icon: Truck, color: "text-purple-600 bg-purple-50" },
@@ -25,26 +34,25 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Cancelled", icon: XCircle, color: "text-red-600 bg-red-50" },
 ];
 
-const PAYMENT_OPTIONS = [
+const PAYMENT_OPTIONS: SelectOption<PaymentStatusValue>[] = [
   { value: "UNPAID", label: "Unpaid", icon: Ban, color: "text-amber-600 bg-amber-50" },
   { value: "PAID", label: "Paid", icon: CreditCard, color: "text-emerald-600 bg-emerald-50" },
   { value: "REFUNDED", label: "Refunded", icon: XCircle, color: "text-gray-600 bg-gray-50" },
+  { value: "FAILED", label: "Failed", icon: XCircle, color: "text-rose-600 bg-rose-50" },
 ];
 
-// 2. مكون القائمة المخصصة (Custom Select Component)
-function CustomSelect({ 
-  value, 
-  onChange, 
-  options 
-}: { 
-  value: string, 
-  onChange: (val: string) => void, 
-  options: typeof STATUS_OPTIONS 
+function CustomSelect<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (val: T) => void;
+  options: SelectOption<T>[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
@@ -103,11 +111,17 @@ function CustomSelect({
   );
 }
 
-export default function OrderStatusEditor({ order }: { order: any }) {
+interface EditableOrder {
+  id: string;
+  status: OrderStatusValue;
+  paymentStatus: PaymentStatusValue;
+}
+
+export default function OrderStatusEditor({ order }: { order: EditableOrder }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(order.status);
-  const [paymentStatus, setPaymentStatus] = useState(order.paymentStatus);
+  const [status, setStatus] = useState<OrderStatusValue>(order.status);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatusValue>(order.paymentStatus);
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -130,7 +144,7 @@ export default function OrderStatusEditor({ order }: { order: any }) {
       } else {
         throw new Error();
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to update order", { id: toastId });
     } finally {
       setLoading(false);
@@ -140,23 +154,12 @@ export default function OrderStatusEditor({ order }: { order: any }) {
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col md:flex-row gap-3">
-        {/* Status Select */}
-        <CustomSelect 
-          value={status} 
-          onChange={setStatus} 
-          options={STATUS_OPTIONS} 
-        />
-
-        {/* Payment Select */}
-        <CustomSelect 
-          value={paymentStatus} 
-          onChange={setPaymentStatus} 
-          options={PAYMENT_OPTIONS} 
-        />
+        <CustomSelect value={status} onChange={setStatus} options={STATUS_OPTIONS} />
+        <CustomSelect value={paymentStatus} onChange={setPaymentStatus} options={PAYMENT_OPTIONS} />
       </div>
 
-      <button 
-        onClick={handleUpdate} 
+      <button
+        onClick={handleUpdate}
         disabled={loading}
         className="w-full bg-slate-900 text-white text-sm py-2.5 rounded-xl font-bold hover:bg-slate-800 disabled:opacity-70 transition-all shadow-md flex items-center justify-center gap-2"
       >

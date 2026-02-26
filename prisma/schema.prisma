@@ -138,6 +138,7 @@ model Order {
   paymentMethodId   String?   // Optional: user might pay one-time without saving
 
   transactionId String?  
+  paypalInvoiceId String? @unique
 
   createdAt       DateTime    @default(now())
 
@@ -262,4 +263,55 @@ model Category {
   products    Product[] // العلاقة مع المنتجات
 
   createdAt   DateTime  @default(now())
+}
+
+model HomeHeroSlide {
+  id           String   @id @default(uuid())
+  badge        String?
+  title        String
+  subtitle     String
+  ctaLabel     String   @default("Explore Now")
+  ctaLink      String   @default("/shop")
+  desktopImage String
+  mobileImage  String
+  desktopImages String[] @default([])
+  mobileImages  String[] @default([])
+  showText      Boolean  @default(true)
+  frameBadges   String[] @default([])
+  frameTitles   String[] @default([])
+  frameSubtitles String[] @default([])
+  frameShowText Boolean[] @default([])
+  orderIndex   Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, orderIndex])
+}
+
+model HomeProductSection {
+  id         String   @id @default(uuid())
+  name       String
+  slug       String
+  productIds String[] @default([])
+  showTitle  Boolean  @default(true)
+  orderIndex Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([slug])
+  @@index([isActive, orderIndex])
+}
+
+model HomeLayoutBlock {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  label      String
+  orderIndex Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isActive, orderIndex])
 }
