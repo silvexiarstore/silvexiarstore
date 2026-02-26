@@ -87,7 +87,7 @@ export default function RegisterPage() {
               className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-slate-100"
             >
               <motion.div
-                className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-2xl mx-auto mb-6"
+                className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-green-500/20 to-emerald-500/20 rounded-2xl mx-auto mb-6"
                 animate={{ scale: [0.8, 1.1, 1] }}
                 transition={{ duration: 0.5 }}
               >
@@ -102,7 +102,7 @@ export default function RegisterPage() {
               </p>
               <Link
                 href="/login"
-                className="w-full bg-gradient-to-r from-[#1CA7A6] to-cyan-600 text-white py-4 rounded-xl font-bold text-center hover:shadow-lg transition-all"
+                className="w-full bg-linear-to-r from-[#1CA7A6] to-cyan-600 text-white py-4 rounded-xl font-bold text-center hover:shadow-lg transition-all"
               >
                 Go to Login
               </Link>
@@ -128,7 +128,7 @@ export default function RegisterPage() {
             className="text-center mb-8"
           >
             <motion.div
-              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500/20 to-pink-500/20 rounded-2xl mb-6"
+              className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-orange-500/20 to-pink-500/20 rounded-2xl mb-6"
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ repeat: Infinity, duration: 3 }}
             >
@@ -243,7 +243,7 @@ export default function RegisterPage() {
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-[#F2994A] to-orange-500 text-white py-4 rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:shadow-orange-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group"
+              className="w-full bg-linear-to-r from-[#F2994A] to-orange-500 text-white py-4 rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:shadow-orange-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group"
             >
               {loading ? (
                 <Loader2 size={20} className="animate-spin" />
