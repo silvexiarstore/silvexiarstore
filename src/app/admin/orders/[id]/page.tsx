@@ -37,6 +37,8 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
   const steps = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
   const currentStepIndex = steps.indexOf(order.status) === -1 ? 0 : steps.indexOf(order.status);
   const isCancelled = order.status === "CANCELLED";
+  const paypalInvoiceId =
+    (order as typeof order & { paypalInvoiceId?: string | null }).paypalInvoiceId ?? null;
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 font-sans">
@@ -242,7 +244,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                 <div>
                   <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">PayPal Invoice ID</p>
                   <p className="font-mono text-xs bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-2 break-all">
-                    {order.paypalInvoiceId || "N/A"}
+                    {paypalInvoiceId || "N/A"}
                   </p>
                 </div>
               </div>
