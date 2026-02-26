@@ -123,25 +123,25 @@ function CategoryBanner({ categories }: { categories: CategoryItem[] }) {
   if (categories.length === 0) return null;
 
   return (
-    <section className="py-16 bg-slate-950">
+    <section className="py-16 bg-[#f0ffff]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl font-black text-white">Shop by Mood</h2>
-          <Sparkles size={20} className="text-cyan-300" />
+          <Sparkles size={20} className="text-cyan-200" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.slice(0, 4).map((category) => (
             <Link
               key={category.id}
               href={`/shop?category=${category.slug}`}
-              className="relative h-44 rounded-2xl overflow-hidden border border-white/15 group"
+              className="relative h-44 rounded-2xl overflow-hidden border border-cyan-200/25 group"
             >
               {category.image ? (
                 <Image src={category.image} alt={category.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-cyan-700 to-slate-700" />
+                <div className="h-full w-full bg-linear-to-br from-cyan-600 to-teal-700" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-[#052D2D]/75 via-black/20 to-transparent" />
               <div className="absolute bottom-3 left-3 text-white">
                 <p className="text-sm font-black">{category.name}</p>
               </div>

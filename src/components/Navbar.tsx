@@ -101,9 +101,9 @@ export default function Navbar() {
 
         {/* Main Nav */}
         <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="h-14 md:h-16 flex items-center justify-between">
-            {/* Left: Hamburger + Logo + Nav */}
-            <div className="flex items-center gap-5">
+          <div className="relative h-14 md:h-16 flex items-center justify-between">
+            {/* Left: Hamburger + Nav */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsMobileOpen((v) => !v)}
                 className="lg:hidden w-9 h-9 rounded-[var(--radius-md)] flex items-center justify-center text-[var(--text-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] transition-all duration-200"
@@ -112,17 +112,8 @@ export default function Navbar() {
                 {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
 
-              <Link href="/" className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--color-primary)] flex items-center justify-center shadow-[var(--shadow-sm)]">
-                  <span className="text-white font-bold text-sm">S</span>
-                </div>
-                <span className="text-[15px] font-bold tracking-tight text-[var(--text-primary)] hidden sm:block">
-                  SILVEXIAR
-                </span>
-              </Link>
-
               {/* Desktop Navigation */}
-              <nav className="hidden lg:flex items-center gap-1 ml-6">
+              <nav className="hidden lg:flex items-center gap-1 ml-2">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
@@ -174,6 +165,19 @@ export default function Navbar() {
                 </div>
               </nav>
             </div>
+
+            <Link
+              href="/"
+              className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-10"
+              aria-label="Silvexiar home"
+            >
+              <div className="w-8 h-8 rounded-md bg-(--color-primary) flex items-center justify-center shadow-(--shadow-sm)">
+                <span className="text-white font-bold text-sm">S</span>
+              </div>
+              <span className="hidden md:block text-[15px] font-bold tracking-[0.18em] text-(--text-primary)">
+                SILVEXIAR
+              </span>
+            </Link>
 
             {/* Right: Actions */}
             <div className="flex items-center gap-1.5">

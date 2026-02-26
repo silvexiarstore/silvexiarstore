@@ -122,24 +122,12 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
       onMouseEnter={() => setPause(true)}
       onMouseLeave={() => setPause(false)}
     >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current.id}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.85, ease: "easeOut" }}
-          className="absolute inset-0"
-        >
-          <picture>
-            <source media="(max-width: 767px)" srcSet={current.mobileImage} />
-            <img src={current.desktopImage} alt={current.title} className="w-full h-full object-cover" />
-          </picture>
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-slate-900/40 to-black/65" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,225,255,0.20),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,166,0,0.25),transparent_35%)]" />
+      <div key={current.id} className="absolute inset-0">
+        <picture>
+          <source media="(max-width: 767px)" srcSet={current.mobileImage} />
+          <img src={current.desktopImage} alt={current.title} className="w-full h-full object-cover" />
+        </picture>
+      </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 h-[78vh] md:h-[92vh] flex items-end md:items-center pb-16 md:pb-0">
         {current.showText && (
@@ -152,16 +140,16 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
               transition={{ duration: 0.45 }}
               className="w-full max-w-xl"
             >
-              <div className="rounded-[2rem] bg-white/10 border border-white/30 backdrop-blur-xl p-6 md:p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+              <div className="rounded-[2rem] bg-slate-900/62 border border-white/35 backdrop-blur-2xl p-6 md:p-8 shadow-[0_20px_55px_rgba(0,0,0,0.35)]">
                 {current.badge && (
-                  <p className="text-[10px] md:text-xs uppercase tracking-[0.28em] font-black text-cyan-200 mb-4">
+                  <p className="text-[10px] md:text-xs uppercase tracking-[0.28em] font-black text-cyan-100 mb-4">
                     {current.badge}
                   </p>
                 )}
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-[1] text-white drop-shadow-[0_10px_35px_rgba(0,0,0,0.5)]">
                   {current.title}
                 </h1>
-                <p className="mt-4 text-xs md:text-sm text-white/85 max-w-lg leading-relaxed">
+                <p className="mt-4 text-xs md:text-sm text-slate-100 max-w-lg leading-relaxed">
                   {current.subtitle}
                 </p>
 
