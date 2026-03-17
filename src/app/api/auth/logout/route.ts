@@ -8,6 +8,6 @@ export async function POST(req: Request) {
   // مسح الكوكيز
   cookieStore.delete("token");
 
-  // Redirect to login page
-  return NextResponse.redirect(new URL("/login", req.url));
+  // Redirect to login page with GET (avoid POST->/login 405)
+  return NextResponse.redirect(new URL("/login", req.url), { status: 303 });
 }

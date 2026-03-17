@@ -233,7 +233,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-5">
-          <p className="text-xs text-white">&copy; {new Date().getFullYear()} Silvexiar Store. All rights reserved.</p>
+          <p className="text-xs text-white">&copy; {new Date().getFullYear()} Silvexiar Store - All rights reserved.</p>
 
           <div className="flex items-center gap-3 flex-wrap justify-center">
             {PAYMENT_METHODS.map((payment) => (
