@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { uploadFileToFirebase } from "@/lib/firebase-storage";
+import { uploadFileToCloudinary } from "@/lib/cloudinary-storage";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, ImagePlus, Loader2, Plus, Save, Trash2 } from "lucide-react";
 
@@ -177,7 +177,7 @@ export default function HomepageSettingsManager() {
     setUploadingKey(slot);
     try {
       const fileName = `homepage/${Date.now()}-${file.name.replace(/\s/g, "-")}`;
-      const publicUrl = await uploadFileToFirebase(file, fileName);
+      const publicUrl = await uploadFileToCloudinary(file, fileName);
       onDone(publicUrl);
       toast.success("Image uploaded");
     } catch {

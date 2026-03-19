@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { uploadFileToFirebase } from "@/lib/firebase-storage";
+import { uploadFileToCloudinary } from "@/lib/cloudinary-storage";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
@@ -52,7 +52,7 @@ export default function AdminSettingsPage() {
     const fileName = `categories/${Date.now()}-${file.name.replace(/\s/g, "-")}`;
     
     try {
-      const publicUrl = await uploadFileToFirebase(file, fileName);
+      const publicUrl = await uploadFileToCloudinary(file, fileName);
       setImage(publicUrl);
       toast.success("Category image uploaded! ✨");
     } catch (err) {

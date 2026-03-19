@@ -12,7 +12,7 @@ import {
   X,
   UploadCloud,
 } from "lucide-react";
-import { uploadFileToFirebase } from "@/lib/firebase-storage";
+import { uploadFileToCloudinary } from "@/lib/cloudinary-storage";
 import { formatMoney } from "@/lib/money";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -223,7 +223,7 @@ export default function ReturnsPage() {
       for (const file of Array.from(files).slice(0, 8)) {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const filePath = `returns/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
-        const publicUrl = await uploadFileToFirebase(file, filePath);
+        const publicUrl = await uploadFileToCloudinary(file, filePath);
         if (!/^https?:\/\//.test(publicUrl)) {
           throw new Error("File URL is not public or invalid.");
         }

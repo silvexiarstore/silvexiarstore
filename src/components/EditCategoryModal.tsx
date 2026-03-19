@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { uploadFileToFirebase } from "@/lib/firebase-storage";
+import { uploadFileToCloudinary } from "@/lib/cloudinary-storage";
 import { toast } from "sonner";
 import Image from "next/image";
 import { X, UploadCloud, Loader2, Save } from "lucide-react";
@@ -28,7 +28,7 @@ export default function EditCategoryModal({ category, onClose, onSuccess }: Edit
     const file = e.target.files[0];
     const fileName = `categories/${Date.now()}-${file.name}`;
     try {
-      const publicUrl = await uploadFileToFirebase(file, fileName);
+      const publicUrl = await uploadFileToCloudinary(file, fileName);
       setImage(publicUrl);
       toast.success("Image replaced!");
     } catch (err) { toast.error("Upload failed"); }

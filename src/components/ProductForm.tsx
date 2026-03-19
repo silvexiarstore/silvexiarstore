@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { uploadFileToFirebase } from "@/lib/firebase-storage";
+import { uploadFileToCloudinary } from "@/lib/cloudinary-storage";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -227,7 +227,7 @@ export default function ProductForm({ initialData }: ProductFormProps) {
 
   const uploadToBucket = async (file: File) => {
     const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    return uploadFileToFirebase(file, fileName);
+    return uploadFileToCloudinary(file, fileName);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
