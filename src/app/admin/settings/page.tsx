@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseStorageBucket } from "@/lib/supabase";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
@@ -52,10 +52,10 @@ export default function AdminSettingsPage() {
     const fileName = `categories/${Date.now()}-${file.name.replace(/\s/g, "-")}`;
     
     try {
-      const { data, error } = await supabase.storage.from("products").upload(fileName, file);
+      const { data, error } = await supabase.storage.from(supabaseStorageBucket).upload(fileName, file);
       if (error) throw error;
       
-      const { data: urlData } = supabase.storage.from("products").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from(supabaseStorageBucket).getPublicUrl(fileName);
       setImage(urlData.publicUrl);
       toast.success("Category image uploaded! ✨");
     } catch (err) {

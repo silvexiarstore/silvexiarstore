@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseStorageBucket } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -227,9 +227,9 @@ export default function ProductForm({ initialData }: ProductFormProps) {
 
   const uploadToBucket = async (file: File) => {
     const fileName = `products/${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const { error } = await supabase.storage.from("products").upload(fileName, file);
+    const { error } = await supabase.storage.from(supabaseStorageBucket).upload(fileName, file);
     if (error) throw error;
-    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+    const { data } = supabase.storage.from(supabaseStorageBucket).getPublicUrl(fileName);
     return data.publicUrl;
   };
 

@@ -12,7 +12,7 @@ import {
   X,
   UploadCloud,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseStorageBucket } from "@/lib/supabase";
 import { formatMoney } from "@/lib/money";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -223,7 +223,7 @@ export default function ReturnsPage() {
     setUploading(true);
     setSubmitError(null);
     const nextUrls: string[] = [];
-    const storageBuckets = ["returns", "products"] as const;
+    const storageBuckets = Array.from(new Set(["returns", supabaseStorageBucket]));
 
     try {
       for (const file of Array.from(files).slice(0, 8)) {

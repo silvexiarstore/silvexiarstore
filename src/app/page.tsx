@@ -176,32 +176,35 @@ function TrustStrip() {
 }
 
 export default async function HomePage() {
-  const [latestProducts, categories, heroSlides, homeSections, layoutBlocks] = await Promise.all([
-    prisma.product.findMany({
-      include: { category: true },
-      orderBy: { createdAt: "desc" },
-      take: 40,
-    }),
-    prisma.category.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
-    prisma.$queryRaw<HeroSlideRow[]>(Prisma.sql`
-      SELECT *
-      FROM "HomeHeroSlide"
-      WHERE "isActive" = true
-      ORDER BY "orderIndex" ASC
-    `),
-    prisma.$queryRaw<HomeSectionRow[]>(Prisma.sql`
-      SELECT *
-      FROM "HomeProductSection"
-      WHERE "isActive" = true
-      ORDER BY "orderIndex" ASC
-    `),
-    prisma.$queryRaw<LayoutRow[]>(Prisma.sql`
-      SELECT *
-      FROM "HomeLayoutBlock"
-      WHERE "isActive" = true
-      ORDER BY "orderIndex" ASC
-    `),
-  ]);
+  // Fetch data sequentially to prevent Prisma prepared statement conflicts
+  const latestProducts = await prisma.product.findMany({
+    include: { category: true },
+    orderBy: { createdAt: "desc" },
+    take: 40,
+  });
+  
+  const categories = await prisma.category.findMany({ orderBy: { createdAt: "desc" }, take: 8 });
+  
+  const heroSlides = await prisma.$queryRaw<HeroSlideRow[]>(Prisma.sql`
+    SELECT *
+    FROM "HomeHeroSlide"
+    WHERE "isActive" = true
+    ORDER BY "orderIndex" ASC
+  `);
+  
+  const homeSections = await prisma.$queryRaw<HomeSectionRow[]>(Prisma.sql`
+    SELECT *
+    FROM "HomeProductSection"
+    WHERE "isActive" = true
+    ORDER BY "orderIndex" ASC
+  `);
+  
+  const layoutBlocks = await prisma.$queryRaw<LayoutRow[]>(Prisma.sql`
+    SELECT *
+    FROM "HomeLayoutBlock"
+    WHERE "isActive" = true
+    ORDER BY "orderIndex" ASC
+  `);
 
   const heroData: HeroSlideItem[] = heroSlides.map((slide: HeroSlideRow) => ({
     id: slide.id,
