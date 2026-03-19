@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { supabase, supabaseStorageBucket } from "@/lib/supabase";
+import { uploadFileToFirebase } from "@/lib/firebase-storage";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, ImagePlus, Loader2, Plus, Save, Trash2 } from "lucide-react";
 
@@ -177,10 +177,8 @@ export default function HomepageSettingsManager() {
     setUploadingKey(slot);
     try {
       const fileName = `homepage/${Date.now()}-${file.name.replace(/\s/g, "-")}`;
-      const { error } = await supabase.storage.from(supabaseStorageBucket).upload(fileName, file);
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from(supabaseStorageBucket).getPublicUrl(fileName);
-      onDone(urlData.publicUrl);
+      const publicUrl = await uploadFileToFirebase(file, fileName);
+      onDone(publicUrl);
       toast.success("Image uploaded");
     } catch {
       toast.error("Image upload failed");

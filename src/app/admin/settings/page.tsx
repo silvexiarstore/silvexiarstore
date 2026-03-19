@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase, supabaseStorageBucket } from "@/lib/supabase";
+import { uploadFileToFirebase } from "@/lib/firebase-storage";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
@@ -52,11 +52,8 @@ export default function AdminSettingsPage() {
     const fileName = `categories/${Date.now()}-${file.name.replace(/\s/g, "-")}`;
     
     try {
-      const { data, error } = await supabase.storage.from(supabaseStorageBucket).upload(fileName, file);
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage.from(supabaseStorageBucket).getPublicUrl(fileName);
-      setImage(urlData.publicUrl);
+      const publicUrl = await uploadFileToFirebase(file, fileName);
+      setImage(publicUrl);
       toast.success("Category image uploaded! ✨");
     } catch (err) {
       toast.error("Upload failed");

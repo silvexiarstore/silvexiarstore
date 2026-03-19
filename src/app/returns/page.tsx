@@ -12,7 +12,7 @@ import {
   X,
   UploadCloud,
 } from "lucide-react";
-import { supabase, supabaseStorageBucket } from "@/lib/supabase";
+import { uploadFileToFirebase } from "@/lib/firebase-storage";
 import { formatMoney } from "@/lib/money";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -90,11 +90,6 @@ function getUploadErrorMessage(err: unknown): string {
   }
   if (typeof err === "string" && err.trim()) return err.trim();
   return "Unknown upload error.";
-}
-
-function isBucketNotFoundError(err: unknown): boolean {
-  const msg = getUploadErrorMessage(err).toLowerCase();
-  return msg.includes("bucket not found") || msg.includes("bucket does not exist");
 }
 
 function isVideoUrl(url: string): boolean {
@@ -223,42 +218,16 @@ export default function ReturnsPage() {
     setUploading(true);
     setSubmitError(null);
     const nextUrls: string[] = [];
-    const storageBuckets = Array.from(new Set(["returns", supabaseStorageBucket]));
 
     try {
       for (const file of Array.from(files).slice(0, 8)) {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const filePath = `returns/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
-        let uploaded = false;
-        let lastError: unknown = null;
-
-        for (const bucket of storageBuckets) {
-          const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-          if (error) {
-            lastError = error;
-            if (isBucketNotFoundError(error) && bucket === "returns") {
-              continue;
-            }
-            throw error;
-          }
-
-          const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-          if (data.publicUrl && /^https?:\/\//.test(data.publicUrl)) {
-            nextUrls.push(data.publicUrl);
-            uploaded = true;
-            break;
-          }
-          lastError = new Error("file URL is not public or invalid.");
-          break;
+        const publicUrl = await uploadFileToFirebase(file, filePath);
+        if (!/^https?:\/\//.test(publicUrl)) {
+          throw new Error("File URL is not public or invalid.");
         }
-
-        if (!uploaded) {
-          throw lastError || new Error("Upload failed.");
-        }
+        nextUrls.push(publicUrl);
       }
 
       setUploadedUrls((prev) => Array.from(new Set([...prev, ...nextUrls])).slice(0, 8));

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { supabase, supabaseStorageBucket } from "@/lib/supabase";
+import { uploadFileToFirebase } from "@/lib/firebase-storage";
 import { toast } from "sonner";
 import Image from "next/image";
 import { X, UploadCloud, Loader2, Save } from "lucide-react";
@@ -28,10 +28,8 @@ export default function EditCategoryModal({ category, onClose, onSuccess }: Edit
     const file = e.target.files[0];
     const fileName = `categories/${Date.now()}-${file.name}`;
     try {
-      const { data, error } = await supabase.storage.from(supabaseStorageBucket).upload(fileName, file);
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from(supabaseStorageBucket).getPublicUrl(fileName);
-      setImage(urlData.publicUrl);
+      const publicUrl = await uploadFileToFirebase(file, fileName);
+      setImage(publicUrl);
       toast.success("Image replaced!");
     } catch (err) { toast.error("Upload failed"); }
     finally { setUploading(false); }
