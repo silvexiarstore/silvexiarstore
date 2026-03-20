@@ -74,7 +74,7 @@ export default function ShopFilters({ categories }: { categories: Category[] }) 
     <div className="space-y-10">
       <div className="animate-fade-up">
         <div className="flex items-center gap-2 mb-4 text-[#1CA7A6] font-bold text-[10px] uppercase tracking-widest font-display">
-          <SortAsc size={16} /> <span>Order By</span>
+          <SortAsc size={16} /> <span>Order By </span>
         </div>
         <div className="grid grid-cols-1 gap-2">
           {[
