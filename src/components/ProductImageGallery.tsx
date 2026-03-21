@@ -49,7 +49,7 @@ export default function ProductImageGallery({ images, title }: ProductImageGalle
           fill
           priority
           unoptimized
-          className="object-cover transition-transform duration-200 group-hover:scale-[1.65]"
+          className="object-contain p-4 transition-transform duration-200 group-hover:scale-[1.65]"
           style={{ transformOrigin: `${hoverOrigin.x}% ${hoverOrigin.y}%` }}
         />
         <div className="absolute bottom-5 right-5 bg-black/70 text-white rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-wider flex items-center gap-2">
@@ -78,39 +78,47 @@ export default function ProductImageGallery({ images, title }: ProductImageGalle
       {isModalOpen && (
         <div className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm p-4 md:p-8">
           <div className="h-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-10 relative bg-black/40 rounded-3xl overflow-hidden flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 bg-white/90 text-black rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest"
-              >
-                Close
-              </button>
-              <div className="relative w-full h-full min-h-[60vh]">
+            <div className="lg:col-span-10 relative bg-[#0a0a0a] rounded-3xl flex flex-col items-center border border-white/10 shadow-2xl">
+              <div className="w-full flex justify-between items-center p-4 z-50 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 rounded-t-3xl">
+                 <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalZoom((v) => Math.max(1, Number((v - 0.2).toFixed(2))))}
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors backdrop-blur-md"
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalZoom((v) => Math.min(4, Number((v + 0.2).toFixed(2))))}
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors backdrop-blur-md"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-white/90 text-black rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest hover:bg-white transition-colors shadow-lg"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="w-full h-[70vh] md:h-[85vh] overflow-auto custom-scrollbar flex items-start justify-center pt-20 pb-10">
                 <Image
                   src={activeImage}
                   alt={`${title} zoom`}
-                  fill
+                  width={3000}
+                  height={3000}
                   unoptimized
-                  className="object-contain transition-transform duration-200"
-                  style={{ transform: `scale(${modalZoom})` }}
+                  className="transition-all duration-200 object-contain"
+                  style={{ 
+                    width: `${modalZoom * 100}%`, 
+                    height: 'auto',
+                    maxWidth: 'none'
+                  }}
                 />
-              </div>
-              <div className="absolute bottom-4 right-4 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setModalZoom((v) => Math.max(1, Number((v - 0.2).toFixed(2))))}
-                  className="w-10 h-10 rounded-full bg-white/90 text-black flex items-center justify-center"
-                >
-                  <Minus size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalZoom((v) => Math.min(4, Number((v + 0.2).toFixed(2))))}
-                  className="w-10 h-10 rounded-full bg-white/90 text-black flex items-center justify-center"
-                >
-                  <Plus size={16} />
-                </button>
               </div>
             </div>
 

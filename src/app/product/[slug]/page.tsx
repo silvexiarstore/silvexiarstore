@@ -85,11 +85,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
       <div className="w-full max-w-none px-3 sm:px-6 py-12">
         {/* Main Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-20">
+        <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 mb-24 relative items-start">
           {/* Image Gallery */}
-          <div className="lg:col-span-6">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#E8F6F6] bg-white">
-              <div className="absolute top-6 right-6 z-20">
+          <div className="w-full lg:w-1/2">
+            <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-[#E8F6F6] bg-white p-2 md:p-4">
+              <div className="absolute top-8 right-8 z-20">
                 <WishlistButton productId={product.id} />
               </div>
               <ProductImageGallery images={product.images} title={product.title} />
@@ -97,7 +97,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </div>
 
           {/* Product Info */}
-          <div className="lg:col-span-6 flex flex-col">
+          <div className="w-full lg:w-1/2 flex flex-col">
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-600">
               {/* Rating */}
               <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
               </h1>
 
               {/* Price */}
-              <div className="flex items-baseline gap-4 pb-6 border-b-2 border-[#E8F6F6]">
+              <div className="flex items-baseline gap-4 pb-8 mb-4 border-b border-[#E8F6F6]">
                 <span className="text-5xl font-extrabold text-[#1CA7A6] font-display">
                   {formatMoney(product.price)}
                 </span>
@@ -134,8 +134,8 @@ export default async function ProductPage({ params }: { params: { slug: string }
               </div>
 
               {/* Description */}
-              <div className="bg-white rounded-2xl p-8 border-2 border-[#E8F6F6] shadow-lg">
-                <p className="text-lg text-[#444444] leading-relaxed whitespace-pre-line wrap-break-word font-medium font-sans">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-[#E8F6F6] shadow-sm mb-6">
+                <p className="text-base sm:text-lg text-[#555] leading-relaxed whitespace-pre-line wrap-break-word font-medium font-sans">
                   {product.description}
                 </p>
               </div>
@@ -236,12 +236,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
                     </p>
                   ) : (
                     <div className="space-y-4">
-                      <div className="relative w-full min-h-80 md:min-h-120 bg-white rounded-2xl overflow-hidden border-2 border-[#E8F6F6] shadow-lg">
+                      <div className="w-full bg-[#FAFAFA] rounded-2xl overflow-hidden border border-[#E8F6F6] flex justify-center items-center shadow-sm">
                         <Image
                           src={section.image}
                           alt={section.caption || product.title}
-                          fill
-                          className="object-contain"
+                          width={1200}
+                          height={1200}
+                          className="w-full h-auto object-contain"
                           unoptimized
                         />
                       </div>
